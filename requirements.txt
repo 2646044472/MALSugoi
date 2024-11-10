@@ -1,0 +1,8 @@
+nest_asyncio
+aiohttp
+beautifulsoup4 
+tqdm
+numpy
+pandas
+selenium 
+webdriver-manager
