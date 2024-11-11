@@ -5,7 +5,7 @@
 
 ### 输入
 
-
+```
 user_features = {
     "user_id": 123,  # 用户ID
     "age": 24,       # 用户年龄
@@ -15,7 +15,7 @@ user_features = {
     "ratings": {1: 10, 2: 8, 5: 7}   # 用户对番剧的评分
 }
 
-- 记得归一化
+// 记得归一化
 anime_features = {
     "anime_id": 456,       # 番剧ID
     "genres": ["Action", "Comedy"],  # 番剧类型
@@ -24,7 +24,7 @@ anime_features = {
     "popularity": 50000,   # 番剧受欢迎度（人数）
     "favorites": 3000      # 收藏数
 }
-
+```
 
 输出：模型预测用户对这个番剧的评分，或者预测用户是否会喜欢这个番剧。
 
