@@ -3,8 +3,8 @@ import glob
 import re
 
 # Define the range of ranks to merge
-start_rank = 1000
-end_rank = 2000
+start_rank = 2000
+end_rank = 3000
 
 # Set file path and pattern, read all CSV files from the data/anime_info directory
 file_paths = glob.glob("data/anime_info/anime_data_*.csv")
@@ -37,7 +37,7 @@ if dfs:
     filtered_df = merged_df[columns_to_keep]
 
     # Save the merged data to a new CSV file
-    output_file = f"data/anime_info/merged_anime_data_{start_rank}_to_{end_rank}.csv"
+    output_file = f"data/anime_info/anime_data_{start_rank}_to_{end_rank}.csv"
     filtered_df.to_csv(output_file, index=False)
 
     print(f"Data has been saved to: {output_file}")

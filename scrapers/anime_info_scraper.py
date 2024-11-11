@@ -209,6 +209,6 @@ def main(start_rank, end_rank):
 
 # Execute the scraping process
 if __name__ == "__main__":
-    start_rank = 2000  # Starting rank for scraping
+    start_rank = 2600  # Starting rank for scraping
     end_rank = 6000  # Ending rank for scraping
     main(start_rank, end_rank)
