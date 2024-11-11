@@ -8,4 +8,3 @@ MALSugoi is an anime recommendation system based on data from MyAnimeList (MAL).
 - recommenders_simple, code of recommenders using simple algorithm in courseware
 - scraper, code of scraper for MAL website
 - utils, common tools
-- 
