@@ -1,10 +1,15 @@
 # MALSugoi
 
-MALSugoi is an anime recommendation system based on data from MyAnimeList (MAL). It scrapes anime ratings, tags, and user information from MAL and implements both content-based and user-based recommendation algorithms.
+**MALSugoi** is an anime recommendation system based on data scraped from MyAnimeList (MAL). The system implements both content-based and user-based recommendation algorithms, providing personalized anime recommendations.
 
-# file architecture
-- assets, place to store picture
-- recommenders_DNN, code of recommenders using Deep neural network
-- recommenders_simple, code of recommenders using simple algorithm in courseware
-- scraper, code of scraper for MAL website
-- utils, common tools
+## File Architecture
+
+- **assets/**: Stores images and other assets.
+- **backup_code/**: Contains backup and older versions of the scraper code.
+- **data/anime_info/**: Contains scraped anime data such as ratings, genres, and tags.
+- **notebooks/**: Jupyter notebooks for data exploration and testing recommendation algorithms.
+- **recommenders_DNN/**: Code for recommendation algorithms using Deep Neural Networks (DNN).
+- **recommenders_simple/**: Code for recommendation algorithms using simpler methods (e.g., SVD, collaborative filtering).
+- **scrapers/**: Scripts for scraping anime and user data from the MyAnimeList website.
+- **tests/**: Unit tests for different modules and algorithms.
+- **utils/**: Utility functions and common tools.
