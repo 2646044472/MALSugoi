@@ -1,173 +1,214 @@
+import pandas as pd
+import os
+import time
 from selenium import webdriver
 from selenium.webdriver.edge.service import Service
 from selenium.webdriver.edge.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.microsoft import EdgeChromiumDriverManager  # 自动管理Edge WebDriver
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from bs4 import BeautifulSoup
-import pandas as pd
-import os
-import time
+from selenium.common.exceptions import WebDriverException
 
-# 配置 Selenium WebDriver for Edge
+# Configure Edge browser
 def setup_browser():
     edge_options = Options()
-    # edge_options.add_argument("--start-maximized")  # 启动时最大化窗口
-    edge_options.add_argument("--disable-infobars")  # 禁用浏览器正在被自动化工具控制的提示
-    edge_options.add_argument("--disable-extensions")  # 禁用扩展
+    edge_options.add_argument("--disable-infobars")
+    edge_options.add_argument("--disable-extensions")
+    edge_options.add_argument("--log-level=3")
+    edge_options.add_argument("--start-maximized")
+    # edge_options.add_argument("--headless")  # Enable headless mode if needed
 
-    # 使用 webdriver-manager 自动下载和管理 Edge WebDriver
     service = Service(EdgeChromiumDriverManager().install())
-    
     browser = webdriver.Edge(service=service, options=edge_options)
     return browser
 
-# 同步获取页面内容
-def fetch(browser, url):
-    print(f"正在获取页面: {url}")
-    browser.get(url)
-    try:
-        # 等待页面加载完成，等待某个关键元素出现
-        WebDriverWait(browser, 10).until(
-            EC.presence_of_element_located((By.CLASS_NAME, "ranking-list"))
-        )
-        return browser.page_source
-    except Exception as e:
-        print(f"获取页面 {url} 时出错: {e}")
-        return None
-
-# 爬取单个动漫的详细信息
-def scrape_anime_details(browser, anime_url, title, score, anime_list):
-    anime_info = {}
-    try:
-        print(f"正在爬取动漫详情: {title} ({anime_url})")
-        anime_page = fetch(browser, anime_url)
-        if not anime_page:
-            print(f"获取 {title} 的详情失败")
-            return
-
-        anime_soup = BeautifulSoup(anime_page, 'html.parser')
-
-        # 提取标签和评分等信息
-        genres = [genre.text.strip() for genre in anime_soup.find_all('span', {'itemprop': 'genre'})]
-        anime_info['Genres'] = ', '.join(genres)
-
-        score_tag = anime_soup.find('span', {'itemprop': 'ratingValue'})
-        if score_tag:
-            anime_info['Score'] = score_tag.text.strip()
-
-        ranked_tag = anime_soup.find(string='Ranked:')
-        if ranked_tag and ranked_tag.parent:
-            anime_info['Ranked'] = ranked_tag.parent.next_sibling.strip()
-
-        popularity_tag = anime_soup.find(string='Popularity:')
-        if popularity_tag and popularity_tag.parent:
-            anime_info['Popularity'] = popularity_tag.parent.next_sibling.strip()
-
-        members_tag = anime_soup.find(string='Members:')
-        if members_tag and members_tag.parent:
-            anime_info['Members'] = members_tag.parent.next_sibling.strip()
-
-        favorites_tag = anime_soup.find(string='Favorites:')
-        if favorites_tag and favorites_tag.parent:
-            anime_info['Favorites'] = favorites_tag.parent.next_sibling.strip()
-
-        # 保存动漫的信息
-        anime_list.append({
-            'title': title,
-            'score': score,
-            'genres': anime_info.get('Genres', 'N/A'),
-            'ranked': anime_info.get('Ranked', 'N/A'),
-            'popularity': anime_info.get('Popularity', 'N/A'),
-            'members': anime_info.get('Members', 'N/A'),
-            'favorites': anime_info.get('Favorites', 'N/A')
-        })
-        print(f"完成爬取: {title}")
-    except Exception as e:
-        print(f"爬取 {anime_url} 时出错: {e}")
-
-# 爬取Top Anime列表
-def scrape_top_anime(browser, start_anime, end_anime):
+# Main scraping function with recovery logic
+def scrape_anime_rank_range(browser, start_rank, end_rank):
     anime_list = []
-    page = start_anime // 50  # 计算从哪一页开始
-    scraped_animes = 0
-    total_animes = end_anime - start_anime
+    batch_size = 100  # Save data every 200 items
+    current_batch_start = start_rank  # Track the start of the current batch
+    last_page_source = None  # Used to check for page loading issues
 
-    while scraped_animes < total_animes:
-        # 构建页面URL
-        url = f"https://myanimelist.net/topanime.php?limit={page * 50}"
-        print(f"正在获取第 {page} 页 ({url})")
+    # Loop through anime ranks in increments of 50 (as per MAL's pagination)
+    for rank in range(start_rank, end_rank, 50):
+        page = (rank // 50) * 50  # Calculate the page offset
+        url = f"https://myanimelist.net/topanime.php?limit={page}"
+        print(f"Accessing: {url}")
 
-        # 获取页面内容
-        page_content = fetch(browser, url)
-        if not page_content:
-            print(f"获取第 {page} 页失败，跳过...")
-            page += 1
-            continue
+        retries = 3
+        while retries > 0:
+            try:
+                browser.get(url)
+                WebDriverWait(browser, 10).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "ranking-list"))
+                )
+                print("Page loaded successfully!")
 
-        soup = BeautifulSoup(page_content, 'html.parser')
+                page_source = browser.page_source
 
-        # 找到所有动漫条目
+                # Check if the page content has changed to avoid stale data
+                if last_page_source == page_source:
+                    print(f"No new content loaded, retrying...")
+                    raise Exception("No new content")
+
+                last_page_source = page_source  # Update last page source
+                break  # Exit retry loop on success
+            except WebDriverException:
+                print("Browser may have been closed manually. Restarting browser...")
+                browser = setup_browser()  # Restart the browser
+                retries -= 1
+                if retries == 0:
+                    print(f"Retry limit reached, restarting browser again...")
+                    browser.quit()
+                    browser = setup_browser()
+                    retries = 3  # Reset retry counter
+                    last_page_source = None  # Reset page source
+            except Exception as e:
+                print(f"Page load failed: {e}")
+                retries -= 1
+                if retries == 0:
+                    print(f"Retry limit reached, restarting browser again...")
+                    browser.quit()
+                    browser = setup_browser()
+                    retries = 3  # Reset retry counter
+                    last_page_source = None
+
+        # Parse the page content with BeautifulSoup
+        soup = BeautifulSoup(last_page_source, 'html.parser')
         anime_entries = soup.find_all('tr', {'class': 'ranking-list'})
-        print(f"在第 {page} 页找到 {len(anime_entries)} 条动漫")
 
+        # Loop through each anime entry on the page
         for i, entry in enumerate(anime_entries):
-            current_index = page * 50 + i
-            if current_index < start_anime:
-                continue
-            if current_index >= end_anime:
-                break
+            current_rank = page + i  # Calculate the current rank
+            if current_rank < start_rank or current_rank >= end_rank:
+                continue  # Skip ranks outside the specified range
 
-            # 提取动漫的标题和评分
             title_tag = entry.find('h3', {'class': 'anime_ranking_h3'})
-            title = title_tag.text.strip() if title_tag else 'Title not found'
+            title = title_tag.text.strip() if title_tag else 'N/A'
 
             score_tag = entry.find('td', {'class': 'score'})
-            score = score_tag.text.strip() if score_tag else 'Score not found'
+            score = score_tag.text.strip() if score_tag else 'N/A'
 
-            # 获取动漫详情页的URL
             anime_url_tag = title_tag.find('a') if title_tag else None
-            anime_url = anime_url_tag['href'] if anime_url_tag else None
+            anime_url = anime_url_tag['href'] if anime_url_tag else 'N/A'
 
-            # 爬取动漫的详细信息
-            if anime_url:
-                scrape_anime_details(browser, anime_url, title, score, anime_list)
+            print(f"Rank {current_rank} Info:")
+            print(f"Title: {title}")
+            print(f"Score: {score}")
+            print(f"Details URL: {anime_url}")
 
-            scraped_animes += 1
-            if scraped_animes >= total_animes:
-                break
+            # Scrape detailed anime info if available
+            anime_details = get_anime_details(browser, anime_url) if anime_url != 'N/A' else {
+                'details_score': 'N/A',
+                'ranked': 'N/A',
+                'popularity': 'N/A',
+                'members': 'N/A',
+                'favorites': 'N/A',
+                'genres': 'N/A'
+            }
 
-        # 移动到下一页
-        page += 1
+            # Append anime info to the list
+            anime_list.append({
+                'rank': current_rank,
+                'title': title,
+                'score': score,
+                'url': anime_url,
+                **anime_details  # Merge in the detailed info
+            })
 
-        # 可选：在每一页之间添加延迟，避免被封
-        # time.sleep(1)
+            # Save the data in batches
+            if len(anime_list) >= batch_size:
+                current_batch_end = current_batch_start + batch_size
+                file_name = f"data/anime_info/anime_data_{current_batch_start}_to_{current_batch_end}.csv"
+                save_data_to_csv(anime_list, file_name)
+                anime_list.clear()  # Clear the list after saving
+                current_batch_start = current_batch_end  # Update batch start
 
-    return anime_list
+        time.sleep(1)  # Pause between page requests
 
-# 保存数据到CSV文件
+    # Save any remaining data after the loop finishes
+    if anime_list:
+        current_batch_end = current_batch_start + len(anime_list)
+        file_name = f"data/anime_info/anime_data_{current_batch_start}_to_{current_batch_end}.csv"
+        save_data_to_csv(anime_list, file_name)
+
+# Scrape detailed anime info from individual anime pages
+def get_anime_details(browser, anime_url):
+    anime_info = {}
+    try:
+        print(f"Accessing details page: {anime_url}")
+        browser.get(anime_url)
+
+        WebDriverWait(browser, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "anime-detail-header-stats"))
+        )
+
+        page_source = browser.page_source
+        soup = BeautifulSoup(page_source, 'html.parser')
+
+        score_tag = soup.find('span', {'itemprop': 'ratingValue'})
+        anime_info['details_score'] = score_tag.text.strip() if score_tag else 'N/A'
+
+        ranked_tag = soup.find(string='Ranked:')
+        anime_info['ranked'] = ranked_tag.parent.next_sibling.strip() if ranked_tag and ranked_tag.parent else 'N/A'
+
+        popularity_tag = soup.find(string='Popularity:')
+        anime_info['popularity'] = popularity_tag.parent.next_sibling.strip() if popularity_tag and popularity_tag.parent else 'N/A'
+
+        members_tag = soup.find(string='Members:')
+        anime_info['members'] = members_tag.parent.next_sibling.strip() if members_tag and members_tag.parent else 'N/A'
+
+        favorites_tag = soup.find(string='Favorites:')
+        anime_info['favorites'] = favorites_tag.parent.next_sibling.strip() if favorites_tag and favorites_tag.parent else 'N/A'
+
+        genres_tag = soup.find_all('span', {'itemprop': 'genre'})
+        genres = [genre.text.strip() for genre in genres_tag]
+        anime_info['genres'] = ', '.join(genres) if genres else 'N/A'
+
+    except Exception as e:
+        print(f"Failed to load details page: {e}")
+        anime_info = {
+            'details_score': 'N/A',
+            'ranked': 'N/A',
+            'popularity': 'N/A',
+            'members': 'N/A',
+            'favorites': 'N/A',
+            'genres': 'N/A'
+        }
+
+    return anime_info
+
+# Save data to CSV
 def save_data_to_csv(anime_list, file_name):
     df = pd.DataFrame(anime_list)
-    os.makedirs(os.path.dirname(file_name), exist_ok=True)
+
+    directory = os.path.dirname(file_name)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
     df.to_csv(file_name, index=False, encoding='utf-8-sig')
-    print(f"数据已保存到 {file_name}")
+    print(f"Data saved to {file_name}")
 
-# 主函数
-if __name__ == "__main__":
-    # 设置要爬取的动漫范围
-    start_anime = 500
-    end_anime = 1000
-
-    # 设置浏览器
+# Main function
+def main(start_rank, end_rank):
     browser = setup_browser()
+    while True:  # Infinite loop to allow multiple restarts
+        try:
+            scrape_anime_rank_range(browser, start_rank, end_rank)
+            break  # Exit the loop if scraping completes successfully
+        except WebDriverException:
+            print("Browser was manually closed. Restarting...")
+            browser = setup_browser()  # Restart the browser and continue
+        except Exception as e:
+            print(f"An error occurred: {e}. Restarting browser...")
+            browser = setup_browser()  # Restart the browser in case of any other error
+        finally:
+            browser.quit()
 
-    # 爬取动漫列表
-    anime_list = scrape_top_anime(browser, start_anime, end_anime)
-
-    # 保存爬取结果到CSV文件
-    file_name = f"data/anime_info/anime_data_{start_anime}_to_{end_anime}.csv"
-    save_data_to_csv(anime_list, file_name)
-
-    # 关闭浏览器
-    browser.quit()
+# Execute the scraping process
+if __name__ == "__main__":
+    start_rank = 2000  # Starting rank for scraping
+    end_rank = 6000  # Ending rank for scraping
+    main(start_rank, end_rank)

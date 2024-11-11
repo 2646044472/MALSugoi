@@ -140,7 +140,7 @@ def save_data_to_csv(anime_list, file_name):
 # Entry point
 if __name__ == "__main__":
     # Set the range of anime to scrape
-    start_anime = 500
+    start_anime = 501
     end_anime = 1000
 
     # Run the main function
