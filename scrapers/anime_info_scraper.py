@@ -24,10 +24,32 @@ def setup_browser():
     browser = webdriver.Edge(service=service, options=edge_options)
     return browser
 
+# Save current progress to scrapers/progress.txt
+def save_progress(current_rank):
+    progress_file = 'scrapers/progress.txt'
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(progress_file), exist_ok=True)
+    
+    with open(progress_file, 'w') as f:
+        f.write(str(current_rank))
+    print(f"Progress saved at rank {current_rank}")
+
+# Load last saved progress from scrapers/progress.txt
+def load_progress():
+    progress_file = 'scrapers/progress.txt'
+    
+    if os.path.exists(progress_file):
+        with open(progress_file, 'r') as f:
+            rank = int(f.read().strip())
+        print(f"Resuming from rank {rank}")
+        return rank
+    else:
+        return None
+
 # Main scraping function with recovery logic
 def scrape_anime_rank_range(browser, start_rank, end_rank):
     anime_list = []
-    batch_size = 100  # Save data every 200 items
+    batch_size = 50  # Save data every 50 items
     current_batch_start = start_rank  # Track the start of the current batch
     last_page_source = None  # Used to check for page loading issues
 
@@ -126,6 +148,9 @@ def scrape_anime_rank_range(browser, start_rank, end_rank):
                 anime_list.clear()  # Clear the list after saving
                 current_batch_start = current_batch_end  # Update batch start
 
+                # Save the current progress
+                save_progress(current_batch_start)
+
         time.sleep(1)  # Pause between page requests
 
     # Save any remaining data after the loop finishes
@@ -133,6 +158,9 @@ def scrape_anime_rank_range(browser, start_rank, end_rank):
         current_batch_end = current_batch_start + len(anime_list)
         file_name = f"data/anime_info/anime_data_{current_batch_start}_to_{current_batch_end}.csv"
         save_data_to_csv(anime_list, file_name)
+
+        # Save the final progress
+        save_progress(current_batch_end)
 
 # Scrape detailed anime info from individual anime pages
 def get_anime_details(browser, anime_url):
@@ -194,6 +222,12 @@ def save_data_to_csv(anime_list, file_name):
 # Main function
 def main(start_rank, end_rank):
     browser = setup_browser()
+    
+    # Try to load the last progress, if available
+    last_progress = load_progress()
+    if last_progress is not None:
+        start_rank = last_progress  # Resume from the last saved rank
+
     while True:  # Infinite loop to allow multiple restarts
         try:
             scrape_anime_rank_range(browser, start_rank, end_rank)
@@ -209,6 +243,6 @@ def main(start_rank, end_rank):
 
 # Execute the scraping process
 if __name__ == "__main__":
-    start_rank = 2600  # Starting rank for scraping
+    start_rank = 3000  # Starting rank for scraping
     end_rank = 6000  # Ending rank for scraping
     main(start_rank, end_rank)
