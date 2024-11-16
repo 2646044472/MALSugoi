@@ -110,7 +110,7 @@ def save_usernames_to_csv(usernames, filename="usernames.csv"):
 base_url = "https://myanimelist.net/users.php?cat=user&q=&loc=&agelow=18&agehigh=90&g="
 
 # Number of pages to scrape
-num_pages = 21
+num_pages = 42
 
 # Scrape the usernames from multiple pages
 usernames = scrape_usernames(base_url, num_pages)
