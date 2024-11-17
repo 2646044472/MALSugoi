@@ -9,7 +9,7 @@
 - **data/anime_info/**: Contains scraped anime data such as ratings, genres, and tags.
 - **notebooks/**: Jupyter notebooks for data exploration and testing recommendation algorithms.
 - **recommenders_DNN/**: Code for recommendation algorithms using Deep Neural Networks (DNN).
-- **recommenders_simple/**: Code for recommendation algorithms using simpler methods (e.g., SVD, collaborative filtering).
+- **recommenders_simple/**: Code for recommendation algorithms using simpler methods (e.g., collaborative filtering).
 - **scrapers/**: Scripts for scraping anime and user data from the MyAnimeList website.
 - **tests/**: Unit tests for different modules and algorithms.
 - **utils/**: Utility functions and common tools.
