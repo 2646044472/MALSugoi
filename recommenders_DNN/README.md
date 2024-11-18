@@ -14,13 +14,11 @@ user_features = {
 
 // 记得归一化
 anime_features = {
-    "anime_id": 1,       # 番剧ID，做一个embedding
+    "anime_id": 1,       # 番剧ID(1-4000)，做一个embedding层或者One-hot，我推荐embedding
     "genres": ["Action", "Comedy"],  # 番剧类型
     "score": 8.5,          # 番剧评分
-    # "ranked": 100,         # 番剧排名
-    # "popularity": 50000,   # 番剧受欢迎度（人数）
     "favorites": 3000,      # 收藏数
-    members: 12345          # 看过/在看/抛弃
+    "members": 12345          # 标记为看过/在看/抛弃的人
 }
 ```
 
