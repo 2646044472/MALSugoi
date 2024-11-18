@@ -2,27 +2,25 @@
 模型的输入应该是用户特征和单个番剧的特征，然后根据这些信息来预测用户对该番剧的评分或推荐度。
 
 
-
 ### 输入
 
 ```
 user_features = {
-    "user_id": 123,  # 用户ID
     "age": 24,       # 用户年龄
     "gender": "M",   # 用户性别
-    "region": "US",  # 用户所在地区
     "watched_animes": [1, 2, 3, 5],  # 用户历史观看的番剧ID
     "ratings": {1: 10, 2: 8, 5: 7}   # 用户对番剧的评分
 }
 
 // 记得归一化
 anime_features = {
-    "anime_id": 456,       # 番剧ID
+    "anime_id": 1,       # 番剧ID，做一个embedding
     "genres": ["Action", "Comedy"],  # 番剧类型
     "score": 8.5,          # 番剧评分
-    "ranked": 100,         # 番剧排名
-    "popularity": 50000,   # 番剧受欢迎度（人数）
-    "favorites": 3000      # 收藏数
+    # "ranked": 100,         # 番剧排名
+    # "popularity": 50000,   # 番剧受欢迎度（人数）
+    "favorites": 3000,      # 收藏数
+    members: 12345          # 看过/在看/抛弃
 }
 ```
 
@@ -64,3 +62,4 @@ anime_features = {
   +----------------------------+
   ```
 
+### evaluate
