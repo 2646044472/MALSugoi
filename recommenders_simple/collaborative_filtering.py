@@ -9,6 +9,9 @@ def convert_to_int(rating_str):
         # 如果转换失败，返回0或其他默认值
         print(f"Warning: Cannot convert '{rating_str}' to an integer. Setting to 0.")
         return 0
+def cosine(a, b):
+    cos_sim = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+    return cos_sim
 
 def df_to_matrix(df):
     data = []
