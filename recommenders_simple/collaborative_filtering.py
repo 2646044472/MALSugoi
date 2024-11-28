@@ -47,7 +47,41 @@ def df_to_matrix(df):
         matrix.at[anime, user] = rating
 
     return matrix.astype(int)  # 确保所有评分都是整数
+def process_matrix(matrix):
+    # 创建一个空列表来存储每行的处理结果
+    results = []
 
+    # 遍历矩阵的每一行
+    for index, row in matrix.iterrows():
+        count = 0  # 记录正整数的数量
+        row_sum = 0  # 记录这一行正整数的总和
+
+        # 遍历每一行中的每个元素
+        for value in row:
+            if value > 0:  # 只处理正整数
+                count += 1
+                row_sum += value
+
+        # 计算 sum / count
+        if count > 0:  # 避免除以零
+            divide_result = row_sum / count
+        else:
+            divide_result = 0  # 如果没有正整数，则除以零时返回0
+
+        # 对每个元素进行操作：如果是正整数，除以 divide_result；如果是0，保持不变
+        new_row = []
+        for value in row:
+            if value > 0:
+                new_row.append(value / divide_result)  # 除以 result
+            else:
+                new_row.append(value)  # 如果是0，保持原样
+
+        # 将新的行添加到结果列表
+        results.append(new_row)
+
+    # 返回一个新的 DataFrame，包含处理后的矩阵
+    result_matrix = pd.DataFrame(results, columns=matrix.columns, index=matrix.index)
+    return result_matrix
 def calculate_similarity_matrix(rating_matrix):
     num_animes = rating_matrix.shape[0]  # number of rows, shape[1] means number of columns
     similarity_matrix = pd.DataFrame(np.zeros((num_animes, num_animes)), 
@@ -87,5 +121,5 @@ def calculate_item_similarity(rating_matrix):
 csv_file_path = r'C:/Users/Lenovo/OneDrive/文档/GitHub/MALSugoi/data/user_animelist/anime_info.csv'
 df = pd.read_csv(csv_file_path)
 matrix = df_to_matrix(df)
-similarity_matrix = calculate_item_similarity(matrix)
-print(similarity_matrix)
+m2  = process_matrix(matrix)
+print(m2)
