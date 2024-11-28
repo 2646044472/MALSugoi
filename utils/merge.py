@@ -3,8 +3,8 @@ import glob
 import re
 
 # Define the range of ranks to merge
-start_rank = 3000
-end_rank = 4000
+start_rank = 0
+end_rank = 5000
 
 # Set file path and pattern, read all CSV files from the data/anime_info directory
 file_paths = glob.glob("data/anime_info/anime_data_*.csv")
