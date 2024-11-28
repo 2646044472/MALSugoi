@@ -54,7 +54,7 @@ def calculate_similarity_matrix(rating_matrix):
     return similarity_matrix
 
 # 示例用法
-csv_file_path = r'C:/Users/Lenovo/OneDrive/文档/GitHub/MALSugoi/anime_info.csv'
+csv_file_path = r'C:/Users/Lenovo/OneDrive/文档/GitHub/MALSugoi/data/user_animelist/anime_info.csv'
 df = pd.read_csv(csv_file_path)
 matrix = df_to_matrix(df)
 print(matrix)

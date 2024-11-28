@@ -37211,7 +37211,6 @@ Catrah,Shakugan no Shana: Season III,-
 Catrah,To Love Ru,-
 Catrah,Ginyuu Mokushiroku Meine Liebe,-
 Catrah,Noein: To Your Other Self,-
-Parva,${ item.anime_title_eng || item.anime_title },"${ item.score != 0 ? item.score : ""-"" }"
 SchoolDaysd00d,Boku wa Imouto ni Koi wo Suru,-
 SchoolDaysd00d,Gantz,10
 SchoolDaysd00d,Koi Kaze,-
