@@ -10,3 +10,6 @@
 - **recommenders_simple/**: Code for recommendation algorithms using simpler methods (e.g. collaborative filtering).
 - **scrapers/**: Scripts for scraping anime and user data from the MyAnimeList website.
 - **tests/**: Unit tests for different modules and algorithms.
+
+## Note:
+Before using code, please type your folder path, such as ```set PYTHONPATH=C:\Users\bankey\Documents\GitHub\MALSugoi``` to your compiler terminal.
