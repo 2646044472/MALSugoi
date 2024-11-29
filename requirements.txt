@@ -12,3 +12,5 @@ jupyter
 torch
 torchvision 
 torchaudio
+torchsummary
+scikit-learn
