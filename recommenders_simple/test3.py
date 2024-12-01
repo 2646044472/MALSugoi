@@ -1,44 +1,80 @@
 import pandas as pd
 import numpy as np
-from typing import Tuple
+from sklearn.metrics.pairwise import cosine_similarity
+from scipy.sparse import csr_matrix
 
-def cosine(a: np.ndarray, b: np.ndarray) -> float:
-    """计算两个向量的余弦相似度"""
-    cos_sim = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-    return cos_sim
+def convert_to_int(rating_str):
+    try:
+        return int(rating_str)
+    except ValueError:
+        print(f"Warning: Cannot convert '{rating_str}' to an integer. Setting to 0.")
+        return 0
 
-def df_to_matrix(df: pd.DataFrame) -> pd.DataFrame:
-    """将 DataFrame 转换为评分矩阵"""
-    # 初始化列表以存储提取的用户、动漫和评分
+def df_to_sparse_matrix(df):
     data = []
     users = set()
     animes = set()
 
-    # 遍历 DataFrame 并提取相关信息
-    for _, row in df.iterrows():
+    for index, row in df.iterrows():
         user, anime, rating = row['username'], row['anime'], row['rating']
-        # 处理缺失评分（'-'）
-        rating = 0 if rating == '-' else int(rating)  # 将 '-' 替换为 0
+        if rating == '-':
+            rating = 0
+        rating = convert_to_int(rating)
         data.append((user, anime, rating))
         users.add(user)
         animes.add(anime)
 
-    # 将用户和动漫转换为排序列表（以保持一致的列/行顺序）
-    users = sorted(users)
-    animes = sorted(animes)
+    users = sorted(list(users))
+    animes = sorted(list(animes))
 
-    # 创建一个空的 DataFrame，用户为列，动漫标题为行
-    matrix = pd.DataFrame(0, index=animes, columns=users)  # 初始化为 0
+    # 创建稀疏矩阵
+    rows = []
+    cols = []
+    values = []
 
-    # 填充矩阵
     for user, anime, rating in data:
-        matrix.at[anime, user] = rating
+        if rating > 0:  # 仅处理正评分
+            rows.append(animes.index(anime))
+            cols.append(users.index(user))
+            values.append(rating)
 
-    return matrix
+    sparse_matrix = csr_matrix((values, (rows, cols)), shape=(len(animes), len(users)))
 
-# 示例用法：读取 CSV 文件到 DataFrame
-csv_file_path = r'C:/Users/Lenovo/OneDrive/文档/GitHub/MALSugoi/anime_info.csv'  # 调整文件路径
+    return sparse_matrix, users, animes  # 返回稀疏矩阵
+
+def process_sparse_matrix(sparse_matrix):
+    # 计算每行的总和和非零元素的计数
+    row_sum = sparse_matrix.sum(axis=1).A1  # 转换为一维数组
+    row_count = (sparse_matrix > 0).sum(axis=1).A1  # 转换为一维数组
+
+    # 使用广播计算每行的平均值
+    row_mean = np.where(row_count > 0, row_sum / row_count, 1)  # 避免除以零
+
+    # 归一化稀疏矩阵
+    normalized_matrix = sparse_matrix.copy()
+    for i in range(normalized_matrix.shape[0]):
+        if row_mean[i] != 0:  # 确保不除以零
+            normalized_matrix[i, :] /= row_mean[i]
+
+    return normalized_matrix
+
+def calculate_row_cosine_similarity(sparse_matrix):
+    # 使用 sklearn 的 cosine_similarity 函数直接计算稀疏矩阵的相似度
+    similarity_matrix = cosine_similarity(sparse_matrix)
+    return pd.DataFrame(similarity_matrix)
+
+# 示例用法
+csv_file_path = r'C:/Users/Lenovo/OneDrive/文档/GitHub/MALSugoi/data/user_animelist/anime_info.csv'
 df = pd.read_csv(csv_file_path)
-print(df)
-matrix = df_to_matrix(df)
-print(matrix)
+
+# 步骤1: 将 DataFrame 转换为稀疏矩阵
+sparse_matrix, users, animes = df_to_sparse_matrix(df)
+
+# 步骤2: 处理稀疏矩阵
+processed_sparse_matrix = process_sparse_matrix(sparse_matrix)
+
+# 步骤3: 计算行之间的余弦相似度
+row_similarity = calculate_row_cosine_similarity(processed_sparse_matrix)
+
+# 打印相似度矩阵
+print(row_similarity)
