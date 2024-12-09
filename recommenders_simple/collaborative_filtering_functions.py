@@ -50,9 +50,6 @@ def cosine(a, b):
     
     cos_sim = np.dot(a, b) / (norm_a * norm_b)
     return cos_sim
-
-def df_to_matrix2(df):
-    return df.pivot(index='username', columns='anime', values='rating').fillna(0)
 def df_to_matrix(df):
     data = []
     users = set()
@@ -147,15 +144,125 @@ def calculate_row_cosine_similarity(matrix):
             similarity_matrix.iloc[j, i] = sim  # 确保矩阵对称
 
     return similarity_matrix
-# 示例用法
-csv_file_path = r'C:/Users/Lenovo/OneDrive/文档/GitHub/MALSugoi/data/user_animelist/anime_info.csv'
-df = pd.read_csv(csv_file_path)
-matrix = df_to_matrix(df)
+import numpy as np
+import pandas as pd
 
-# 处理矩阵
-sim = process_matrix(matrix)
-check_non_integer_entries(sim)
+def item_based_recommendation(similarity_matrix, matrix, top_n=5000, user_index=None, anime_index=None):
+    """
+    计算用户对动漫的推荐评分 r_ix。
+    
+    参数:
+    - similarity_matrix: 动漫之间的相似度矩阵 (DataFrame)
+    - rating_matrix: 用户对动漫的评分矩阵 (DataFrame)
+    - top_n: 考虑的与动漫 i 相似的前 N 个动漫 (int)
+    - user_index: 用户的索引 (str)
+    - anime_index: 当前动漫的索引 (str)
+    
+    返回:
+    - 推荐评分 r_ix (float)
+    """
+    
+    # 检查 anime_index 是否在 rating_matrix 中
+    if anime_index not in matrix.index:
+        print(f"动漫 {anime_index} 不在评分矩阵中。")
+        return 0  # 或者返回一个合适的默认值
 
-# 计算相似度
-sim = parallel_cosine_similarity(sim)
-print(sim)
+    # 检查 user_index 是否在 rating_matrix 中
+    if user_index not in matrix.columns:
+        print(f"用户 {user_index} 不在评分矩阵中。")
+        return 0  # 或者返回一个合适的默认值
+
+    # 获取用户对该动漫的评分
+    user_rating = matrix.loc[anime_index, user_index]  # 使用 .loc
+
+    # 如果评分不为 0，直接返回该评分
+    if user_rating != 0:
+        return user_rating
+    
+    # 提取动漫 i 的相似度和用户的评分
+    sim_scores = similarity_matrix.loc[anime_index, :].values  # 使用 .loc
+    ratings = matrix.loc[:, user_index].values  # 使用 .loc，获取用户的评分
+
+    # 找到与动漫 i 最相似的前 N 个动漫的索引
+    similar_indices = np.argsort(sim_scores)[-top_n:][::-1]
+
+    # 计算推荐评分 r_ix
+    numerator = 0  # 分子
+    denominator = 0  # 分母
+    
+    for j in similar_indices:
+        if ratings[j] > 0:  # 只考虑用户已评分的动漫
+            numerator += sim_scores[j] * ratings[j]
+            denominator += sim_scores[j]
+
+    # 避免除以零
+    if denominator > 0:
+        return numerator / denominator
+    else:
+        return 0  # 如果没有相似度，返回 0
+def calculate_all_recommendations(similarity_matrix, rating_matrix, user_index, top_n=100):
+    """
+    计算用户对所有动漫的推荐评分，并选出前 N 部评分最高的动漫。
+    
+    参数:
+    - similarity_matrix: 动漫之间的相似度矩阵 (DataFrame)
+    - rating_matrix: 用户对动漫的评分矩阵 (DataFrame)
+    - user_index: 用户的索引 (str)
+    - top_n: 返回前 N 部评分最高的动漫 (int)
+
+    返回:
+    - 推荐动漫及其评分 (DataFrame)
+    """
+    n_animes = rating_matrix.shape[0]  # 动漫数量
+    recommended_ratings = []
+
+    for anime_index in rating_matrix.index:  # 使用行名（动漫名称）
+        rating = item_based_recommendation(similarity_matrix, rating_matrix, user_index=user_index, anime_index=anime_index)
+        recommended_ratings.append((anime_index, rating))
+
+    # 创建 DataFrame 存储推荐评分
+    ratings_df = pd.DataFrame(recommended_ratings, columns=['Anime Name', 'Predicted Rating'])
+    
+    # 选出评分最高的前 N 部动漫
+    top_recommendations = ratings_df.sort_values(by='Predicted Rating', ascending=False).head(top_n)
+    
+    return top_recommendations
+def fill_zero_ratings(similarity_matrix, matrix, top_n=5000):
+    filled_matrix = matrix.copy()
+    original_ratings = {}  # 用于存储原始评分
+
+    # 仅选择前500个用户评分
+    user_columns = filled_matrix.columns[:500]
+
+    # 遍历每个动漫
+    for anime_index in filled_matrix.index:
+        for user_index in user_columns:
+            if filled_matrix.loc[anime_index, user_index] > 0:  # 记录原始评分
+                original_ratings[(anime_index, user_index)] = filled_matrix.loc[anime_index, user_index]
+                filled_matrix.loc[anime_index, user_index] = 0  # 将评分变为0
+
+    # 重新计算评分
+    for anime_index in filled_matrix.index:
+        for user_index in user_columns:
+            if (anime_index, user_index) not in original_ratings:
+                recommended_rating = item_based_recommendation(
+                    similarity_matrix,
+                    filled_matrix,
+                    top_n,
+                    user_index,
+                    anime_index
+                )
+                filled_matrix.loc[anime_index, user_index] = recommended_rating
+
+    return filled_matrix, original_ratings
+
+# 计算均方误差
+def calculate_mae(original_ratings, filled_matrix):
+    y_true = []
+    y_pred = []
+
+    for (anime_index, user_index), original_rating in original_ratings.items():
+        y_true.append(original_rating)
+        y_pred.append(filled_matrix.loc[anime_index, user_index])
+
+    return mean_absolute_error(y_true, y_pred)
