@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from joblib import Parallel, delayed
+from sklearn.metrics import mean_absolute_error
 def parallel_cosine_similarity(matrix):
     num_rows = matrix.shape[0]
     similarity_matrix = np.zeros((num_rows, num_rows), dtype=float)
