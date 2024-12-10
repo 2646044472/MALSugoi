@@ -1,15 +1,23 @@
 # MALSugoi
 
-**MALSugoi** is an anime recommendation system based on data scraped from MyAnimeList (MAL). The system implements both content-based and user-based recommendation algorithms, providing personalized anime recommendations.
+**MALSugoi**: A personalized anime recommendation system using MyAnimeList (MAL) data, powered by collaborative filtering and deep neural networks.
 
-## File Architecture
+## Project Structure
 
-- **assets/**: Stores images and other assets.
-- **data/**: Contains scraped anime data and user info.
-- **recommenders_DNN/**: Code for recommendation algorithms using Deep Neural Networks (DNN).
-- **recommenders_simple/**: Code for recommendation algorithms using simpler methods (e.g. collaborative filtering).
-- **scrapers/**: Scripts for scraping anime and user data from the MyAnimeList website.
-- **tests/**: Unit tests for different modules and algorithms.
+- **data/**: Raw and processed datasets (anime info and user ratings).
+- **experiments/**: Experimental code for testing and evaluating algorithms.
+- **recommenders_DNN/**: Deep Neural Network-based recommendation models.
+- **recommenders_simple/**: Collaborative filtering-based models.
+- **scrapers/**: Scripts to scrape anime and user data from MAL.
 
-## Note:
-Before using code, please type your folder path, such as ```set PYTHONPATH=C:\Users\bankey\Documents\GitHub\MALSugoi``` to your compiler terminal.
+## Usage
+
+1. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Run Models**:
+
+- **DNN-based Recommendation**: Train the model using `recommenders_DNN/training/training.ipynb` and generate recommendations with `recommenders_DNN/test/test.py`.
+- **Collaborative Filtering**: Use `recommenders_simple/collaborative_filtering.ipynb` to train and generate recommendations.
