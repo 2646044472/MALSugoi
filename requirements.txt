@@ -1,16 +1,19 @@
-# python=3.10 to get pytorch support
+# python=3.10
 nest_asyncio
 aiohttp
-beautifulsoup4 
+beautifulsoup4
 tqdm
 numpy
 pandas
-selenium 
+selenium
 webdriver-manager
 celery
 jupyter
 torchsummary
 scikit-learn
+requests
+
+# (PyTorch, torchvision, torchaudio for CUDA 12.1 support)
 torch --index-url https://download.pytorch.org/whl/cu121
 torchvision --index-url https://download.pytorch.org/whl/cu121
 torchaudio --index-url https://download.pytorch.org/whl/cu121
